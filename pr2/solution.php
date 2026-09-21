@@ -81,9 +81,6 @@ $catalog = [
     ]
 ];
 
-/**
-1. Фильтрация по категории
- */
 function filter_by_category(array $catalog, ?string $category): array
 {
     if ($category === null || $category === '' || $category === 'all') {
@@ -95,9 +92,6 @@ function filter_by_category(array $catalog, ?string $category): array
     }));
 }
 
-/**
-2. Фильтрация по цене [min, max]
- */
 function filter_by_price(array $catalog, float $min = 0.0, ?float $max = null): array
 {
     return array_values(array_filter($catalog, function ($item) use ($min, $max) {
@@ -115,9 +109,6 @@ function filter_by_price(array $catalog, float $min = 0.0, ?float $max = null): 
     }));
 }
 
-/**
-3. Поиск по названию без учёта регистра
- */
 function search_by_name(array $catalog, string $query): array
 {
     $query = trim($query);
@@ -133,12 +124,9 @@ function search_by_name(array $catalog, string $query): array
     }));
 }
 
-/**
-4. Сортировка по цене
- */
 function sort_by_price(array $catalog, string $direction = 'asc'): array
 {
-    $items = $catalog; // Копируем, чтобы не портить исходный массив
+    $items = $catalog;
 
     usort($items, function ($a, $b) use ($direction) {
         $priceA = $a['price'] ?? 0.0;
@@ -152,9 +140,6 @@ function sort_by_price(array $catalog, string $direction = 'asc'): array
     return $items;
 }
 
-/**
-5. Сортировка по названию
- */
 function sort_by_title(array $catalog, string $direction = 'asc'): array
 {
     $items = $catalog;
@@ -171,9 +156,6 @@ function sort_by_title(array $catalog, string $direction = 'asc'): array
     return $items;
 }
 
-/**
-6. Пагинация (разбивка на страницы)
- */
 function paginate(array $items, int $page, int $perPage): array
 {
     $total = count($items);
@@ -184,7 +166,6 @@ function paginate(array $items, int $page, int $perPage): array
         $totalPages = 1;
     }
 
-    // Защита: зажимаем страницу в допустимые рамки
     if ($page < 1) {
         $page = 1;
     } elseif ($page > $totalPages) {
@@ -202,9 +183,6 @@ function paginate(array $items, int $page, int $perPage): array
     ];
 }
 
-/**
-7. Получение уникальных категорий
- */
 function unique_categories(array $catalog): array
 {
     $categories = [];
@@ -217,7 +195,6 @@ function unique_categories(array $catalog): array
     return array_keys($categories);
 }
 
-// --- Демонстрация работы с красивым выводом ---
 if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'])) {
     echo "<h1>Демонстрация работы каталога</h1>";
 

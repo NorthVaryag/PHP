@@ -100,29 +100,26 @@ $catalog = [
         ]
 ];
 
+/*
+if (is_file($file) & is_readable($file)) {
+}*/
 
+/*$json = json_encode($catalog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+if (json_validate($json)) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo $json;
+} else {
+    echo "Eror";
+}*/
+
+$json = json_encode($catalog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+if (file_put_contents("catalog.json", $json) !== false) {
+        $catalog = json_decode(file_get_contents("catalog.json"), true);
+        echo "<pre>";
+        print_r($catalog);
+        echo "</pre>";}
+else
+    echo "eror";
 ?>
-
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>Каталог товаров</title>
-</head>
-<body>
-<form method="GET">
-    <input type="text" name="query" placeholder="Search" value="<?= htmlspecialchars($_GET['query'] ?? '') ?>">
-    <button type="submit">Enter</button>
-</form>
-
-<?php
-$searchQuery = trim($_GET['query'] ?? '');
-
-foreach ($catalog as $product) {
-    if ($searchQuery === '' || str_contains(strtolower($product['title']), strtolower($searchQuery))) {
-        echo '<div>' . htmlspecialchars($product['title']) . ' - ' . $product['price'] . ' руб.</div>';
-    }
-}
-?>
-</body>
-</html>

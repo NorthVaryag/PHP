@@ -80,20 +80,6 @@ $catalog = [
 ];
 
 
+
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Каталог товаров</title>
-    <style>
-    </style>
-</head>
-<body>
-<?php
-foreach ($catalog as $product) {
-    echo $product['title'];
-}
-?>
-</body>
-</html>
+

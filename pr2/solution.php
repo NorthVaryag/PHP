@@ -43,6 +43,20 @@ $catalog = [
                 'discount' => 3
         ],
         [
+                'title' => 'Apple',
+                'category' => 'Parte',
+                'price' => 9999999999,
+                'stock' => 1,
+                'discount' => 0
+        ],
+        [
+                'title' => 'Rofl',
+                'category' => 'PHPHPHPHPHPHP',
+                'price' => 999999,
+                'stock' => 1,
+                'discount' => 0
+        ],
+        [
                 'title' => 'Ноутбук',
                 'category' => 'Техника',
                 'price' => 54990,
@@ -64,6 +78,13 @@ $catalog = [
                 'discount' => 0,
         ],
         [
+                'title' => 'Игровая консоль',
+                'category' => 'Игры',
+                'price' => 45000,
+                'stock' => 3,
+                'discount' => 15,
+        ],
+        [
                 'title' => 'Механическая клавиатура',
                 'category' => 'Аксессуары',
                 'price' => 7500,
@@ -77,9 +98,97 @@ $catalog = [
                 'stock' => 1,
                 'discount' => 20,
         ]
-];
+]; ?>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Работа 2. Массивы и функции — теория</title>
+</head>
+<body>
+<label for="city">Сортировка:</label>
+<select id="city" name="city_choice">
+    <option value="" disabled selected>Сделайте выбор</option>
+    <option value="by_category">По категории</option>
+    <option value="by_cost">По цене</option>
+    <option value="by_name">По названнию</option>
+</select>
+<?
+function price_with_discount(int $price, int $discount): float
+{
+    $finalPrice = $price * (100 - $discount) / 100;
+    return round($finalPrice, 2);
+}
 
+function stock_label(int $stock): string
+{
+    return match (true) {
+        $stock === 0 => 'Нет в наличии',
+        $stock <= 5 => 'Мало',
+        default => 'В наличии',
+    };
+}
 
+function render_catalog(array $catalog): string
+{
+    $output = "";
+    $output .= "<br>=== Каталог товаров ===<br>";
+    $catalogLength = count($catalog);
 
+    for ($i = 0; $i < $catalogLength; $i++) {
+        $product = $catalog[$i];
+
+        $priceFormatted = number_format($product['price'], 0, ',', ' ');
+        $discountFormatted = number_format($product['discount'], 0, ',', ' ');
+        $discountPrice = price_with_discount($product['price'], $product['discount']);
+        $discountPriceFormatted = number_format($discountPrice, 2, ',', ' ');
+        $status = stock_label($product['stock']);
+
+        $output .= sprintf(
+                "%d. %s [%s] — %s руб. (Скидка: %s%%, Цена со скидкой: %s руб.) | Остаток: %d (%s)<br>",
+                $i + 1,
+                $product['title'],
+                $product['category'],
+                $priceFormatted,
+                $discountFormatted,
+                $discountPriceFormatted,
+                $product['stock'],
+                $status
+        );
+    }
+
+    $totalStockValue = 0.0;
+    $discountedCount = 0;
+
+    foreach ($catalog as $product) {
+        $discountPrice = price_with_discount($product['price'], $product['discount']);
+        $totalStockValue += $discountPrice * $product['stock'];
+
+        if ($product['discount'] > 0) {
+            $discountedCount++;
+        }
+    }
+
+    $totalStockValueFormatted = number_format(round($totalStockValue, 2), 2, ',', ' ');
+
+    $output .= "<br>=== Итоги по складу ===<br>";
+    $output .= "Итоговая стоимость склада: {$totalStockValueFormatted} руб.<br>";
+    $output .= "Количество товаров со скидкой: {$discountedCount}<br>";
+
+    return $output;
+}
+
+if (basename(__FILE__) === basename($_SERVER['SCRIPT_FILENAME'] ?? '')) {
+    echo render_catalog($catalog);
+}
 ?>
+</body>
+</html>
 
+
+
+<!--function filter_by_price(array $catalog, float $min = 0.0, ?float $max = null): array
+{
+
+}-->

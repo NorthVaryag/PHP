@@ -1,4 +1,11 @@
 <?php
+
+declare(strict_types=1);
+require '../vendor/autoload.php';
+$whoops = new \Whoops\Run;
+$whoops->pushHandler(new \Whoops\Handler\PrettyPageHandler);
+$whoops->register();
+
 require __DIR__ . '/functions.php';
 $catalog = require __DIR__ . '/data.php';
 $search = isset($_GET['search']) ? $_GET['search'] : '';

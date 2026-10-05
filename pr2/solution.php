@@ -121,14 +121,6 @@ function price_with_discount(int $price, int $discount): float
     return round($finalPrice, 2);
 }
 
-function stock_label(int $stock): string
-{
-    return match (true) {
-        $stock === 0 => 'Нет в наличии',
-        $stock <= 5 => 'Мало',
-        default => 'В наличии',
-    };
-}
 
 function render_catalog(array $catalog): string
 {
@@ -143,38 +135,20 @@ function render_catalog(array $catalog): string
         $discountFormatted = number_format($product['discount'], 0, ',', ' ');
         $discountPrice = price_with_discount($product['price'], $product['discount']);
         $discountPriceFormatted = number_format($discountPrice, 2, ',', ' ');
-        $status = stock_label($product['stock']);
 
         $output .= sprintf(
-                "%d. %s [%s] — %s руб. (Скидка: %s%%, Цена со скидкой: %s руб.) | Остаток: %d (%s)<br>",
+                "%d. %s [%s] — %s руб. (Скидка: %s%%, Цена со скидкой: %s руб.)<br>",
                 $i + 1,
                 $product['title'],
                 $product['category'],
                 $priceFormatted,
                 $discountFormatted,
-                $discountPriceFormatted,
-                $product['stock'],
-                $status
+                $discountPriceFormatted
         );
     }
 
     $totalStockValue = 0.0;
     $discountedCount = 0;
-
-    foreach ($catalog as $product) {
-        $discountPrice = price_with_discount($product['price'], $product['discount']);
-        $totalStockValue += $discountPrice * $product['stock'];
-
-        if ($product['discount'] > 0) {
-            $discountedCount++;
-        }
-    }
-
-    $totalStockValueFormatted = number_format(round($totalStockValue, 2), 2, ',', ' ');
-
-    $output .= "<br>=== Итоги по складу ===<br>";
-    $output .= "Итоговая стоимость склада: {$totalStockValueFormatted} руб.<br>";
-    $output .= "Количество товаров со скидкой: {$discountedCount}<br>";
 
     return $output;
 }

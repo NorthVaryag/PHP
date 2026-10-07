@@ -1,76 +1,87 @@
 <?php
-
-define('CATALOG_FILE', __DIR__ . '/catalog.json');
-
-function default_catalog(): array
+function page_header($title)
 {
-    return [
-        ['id' => 1, 'title' => 'Grand Theft Auto VI', 'category' => 'Game', 'price' => 9000, 'stock' => 15, 'discount' => 0],
-        ['id' => 2, 'title' => 'Grand Theft Auto VI Full Edition', 'category' => 'Game', 'price' => 15000, 'stock' => 25, 'discount' => 5],
-        ['id' => 3, 'title' => 'The Witcher IV', 'category' => 'Game', 'price' => 6500, 'stock' => 50, 'discount' => 15],
-        ['id' => 4, 'title' => 'Grdariki', 'category' => 'Game', 'price' => 5800, 'stock' => 36, 'discount' => 25],
-        ['id' => 5, 'title' => 'Steam Deck', 'category' => 'Console', 'price' => 58000, 'stock' => 12, 'discount' => 0],
-        ['id' => 6, 'title' => 'PlayStation', 'category' => 'Console', 'price' => 65000, 'stock' => 8, 'discount' => 3],
-        ['id' => 7, 'title' => 'Apple', 'category' => 'Parte', 'price' => 9999999999, 'stock' => 1, 'discount' => 0],
-        ['id' => 8, 'title' => 'Rofl', 'category' => 'PHPHPHPHPHPHP', 'price' => 999999, 'stock' => 1, 'discount' => 0]
-    ];
+    ?>
+    <!DOCTYPE html>
+    <html lang="ru">
+    <head>
+        <meta charset="UTF-8">
+        <title><?= e($title) ?></title>
+    </head>
+    <body>
+
+    <p><a href="index.php">Каталог</a> | <a href="add.php">Добавить товар</a></p>
+    <h1><?= e($title) ?></h1>
+    <?php
 }
 
-function save_catalog(array $catalog, string $file = CATALOG_FILE): bool
+function page_footer()
 {
-    $json = json_encode($catalog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    $result = @file_put_contents($file, $json, LOCK_EX);
-    if ($result === false) {
-        return false;
-    }
-    return true;
+    ?>
+    </body>
+    </html>
+    <?php
 }
 
-function load_catalog(string $file = CATALOG_FILE): array
+function banner($type, $text)
 {
-    if (is_file($file) && is_readable($file)) {
-        $json = file_get_contents($file);
-        if ($json !== false && json_validate($json)) {
-            $catalog = json_decode($json, true);
-            if (is_array($catalog) && array_is_list($catalog)) {
-                return $catalog;
-            }
-        }
-        rename($file, $file . '.broken.' . date('YmdHis'));
-    }
-
-    $catalog = default_catalog();
-    save_catalog($catalog, $file);
-    return $catalog;
+    $color = $type == 'ok' ? 'green' : 'red';
+    echo '<p style="color: ' . $color . '">' . e($text) . '</p>';
 }
 
-function catalog_stats(array $catalog): array
+function product_form($old, $errors, $categories, $button)
 {
-    $catalogLength = count($catalog);
-    $totalStock = 0;
-    $totalStockValue = 0;
+    ?>
+    <form method="post" novalidate>
+        <p>
+            <label for="title">Название:</label>
+            <input type="text" id="title" name="title" value="<?= e(isset($old['title']) ? $old['title'] : '') ?>">
+            <?php if (isset($errors['title'])): ?>
+                <span style="color: red"><?= e($errors['title']) ?></span>
+            <?php endif; ?>
+        </p>
 
-    foreach ($catalog as $product) {
-        $totalStock += $product['stock'];
-        $totalStockValue += $product['price'] * $product['stock'];
-    }
+        <p>
+            <label for="category">Категория:</label>
+            <select id="category" name="category">
+                <option value="">— выберите —</option>
+                <?php foreach ($categories as $cat): ?>
+                    <option value="<?= e($cat) ?>"
+                        <?= (isset($old['category']) && $old['category'] === $cat) ? 'selected' : '' ?>>
+                        <?= e($cat) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <?php if (isset($errors['category'])): ?>
+                <span style="color: red"><?= e($errors['category']) ?></span>
+            <?php endif; ?>
+        </p>
 
-    return [
-        'products' => $catalogLength,
-        'stock' => $totalStock,
-        'value' => $totalStockValue,
-    ];
-}
+        <p>
+            <label for="price">Цена:</label>
+            <input type="text" id="price" name="price" value="<?= e(isset($old['price']) ? $old['price'] : '') ?>">
+            <?php if (isset($errors['price'])): ?>
+                <span style="color: red"><?= e($errors['price']) ?></span>
+            <?php endif; ?>
+        </p>
 
-function next_id(array $catalog): int
-{
-    $maxId = 0;
+        <p>
+            <label for="stock">Остаток:</label>
+            <input type="text" id="stock" name="stock" value="<?= e(isset($old['stock']) ? $old['stock'] : '') ?>">
+            <?php if (isset($errors['stock'])): ?>
+                <span style="color: red"><?= e($errors['stock']) ?></span>
+            <?php endif; ?>
+        </p>
 
-    foreach ($catalog as $product) {
-        if ($product['id'] > $maxId) {
-            $maxId = $product['id'];
-        }
-    }
+        <p>
+            <label for="discount">Скидка (%):</label>
+            <input type="text" id="discount" name="discount" value="<?= e(isset($old['discount']) ? $old['discount'] : '') ?>">
+            <?php if (isset($errors['discount'])): ?>
+                <span style="color: red"><?= e($errors['discount']) ?></span>
+            <?php endif; ?>
+        </p>
 
-    return $maxId + 1;
+        <button type="submit"><?= e($button) ?></button>
+    </form>
+    <?php
 }

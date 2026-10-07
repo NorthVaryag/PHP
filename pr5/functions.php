@@ -1,88 +1,110 @@
 <?php
+define('CATALOG_FILE', __DIR__ . '/data/catalog.json');
+define('PER_PAGE', 5);
+
 function e($value)
 {
-    return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
-function unique_categories($catalog)
+function price_with_discount($price, $discount)
 {
-    return array_values(array_unique(array_column($catalog, 'category')));
+    return round($price - $price * ($discount / 100), 2);
 }
 
-function search_by_name($catalog, $search)
+function stock_label($stock)
 {
-    $search = trim(strtolower($search));
-    $catalogLength = count($catalog);
-    $result = [];
+    return match (true) {
+        $stock === 0 => 'Нет в наличии',
+        $stock <= 5 => 'Мало',
+        default => 'В наличии',
+    };
+}
 
-    for ($i = 0; $i < $catalogLength; $i++) {
-        $product = $catalog[$i];
-        if ($search === '' || str_contains(strtolower($product['title']), $search)) {
-            $result[] = $product;
+function default_catalog(): array
+{
+    return [
+        ['id' => 1, 'title' => 'Ноутбук Lenovo IdeaPad', 'category' => 'Техника', 'price' => 54990, 'stock' => 15, 'discount' => 10],
+        ['id' => 2, 'title' => 'Смартфон Xiaomi', 'category' => 'Техника', 'price' => 21990, 'stock' => 30, 'discount' => 5],
+        ['id' => 3, 'title' => 'Наушники JBL Tune', 'category' => 'Аксессуары', 'price' => 4990, 'stock' => 40, 'discount' => 0],
+        ['id' => 4, 'title' => 'Игровая приставка PS5', 'category' => 'Игры', 'price' => 65000, 'stock' => 20, 'discount' => 3],
+        ['id' => 5, 'title' => 'Настольная игра Монополия', 'category' => 'Игры', 'price' => 2490, 'stock' => 35, 'discount' => 15],
+        ['id' => 6, 'title' => 'Мышь беспроводная', 'category' => 'Аксессуары', 'price' => 2500, 'stock' => 45, 'discount' => 20],
+        ['id' => 7, 'title' => 'Механическая клавиатура', 'category' => 'Аксессуары', 'price' => 7500, 'stock' => 25, 'discount' => 0],
+        ['id' => 8, 'title' => 'Зарядное устройство USB', 'category' => 'Аксессуары', 'price' => 1200, 'stock' => 16, 'discount' => 0],
+    ];
+}
+
+function save_catalog(array $catalog, string $file = CATALOG_FILE): bool
+{
+    $json = json_encode($catalog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    $result = @file_put_contents($file, $json, LOCK_EX);
+    if ($result === false) {
+        return false;
+    }
+    return true;
+}
+
+function load_catalog(string $file = CATALOG_FILE): array
+{
+    if (is_file($file) && is_readable($file)) {
+        $json = file_get_contents($file);
+        if ($json !== false && json_validate($json)) {
+            $catalog = json_decode($json, true);
+            if (is_array($catalog) && array_is_list($catalog)) {
+                return $catalog;
+            }
         }
+        rename($file, $file . '.broken.' . date('YmdHis'));
     }
 
-    return $result;
+    $catalog = default_catalog();
+    save_catalog($catalog, $file);
+    return $catalog;
 }
 
-function filter_by_category($catalog, $category)
+function catalog_stats($catalog)
 {
-    $result = [];
+    $catalogLength = count($catalog);
+    $totalStock = 0;
+    $totalStockValue = 0;
 
     foreach ($catalog as $product) {
-        if ($category === '' ||  $category === 'all' ||  $product['category'] === $category) {
-            $result[] = $product;
-        }
+        $totalStock += $product['stock'];
+        $totalStockValue += price_with_discount($product['price'], $product['discount']) * $product['stock'];
     }
 
-    return $result;
+    return [
+        'products' => $catalogLength,
+        'stock' => $totalStock,
+        'value' => $totalStockValue,
+    ];
 }
 
-function validate_product($data)
+function find_product($catalog, $id)
 {
-    $errors = [];
-
-    $title = isset($data['title']) ? trim($data['title']) : '';
-    if ($title === '') {
-        $errors['title'] = 'Введите название';
-    } elseif (strlen($title) < 3) {
-        $errors['title'] = 'Название не короче 3 символов';
-    }
-
-    $category = isset($data['category']) ? trim($data['category']) : '';
-    if ($category === '') {
-        $errors['category'] = 'Выберите категорию';
-    }
-
-    $price = isset($data['price']) ? str_replace(',', '.', trim($data['price'])) : '';
-    if (!is_numeric($price)) {
-        $errors['price'] = 'Цена должна быть числом';
-    } elseif ($price <= 0) {
-        $errors['price'] = 'Цена должна быть больше нуля';
-    }
-
-    if (isset($data['stock'])) {
-        $stock = trim($data['stock']);
-        if (!is_numeric($stock)) {
-            $errors['stock'] = 'Остаток должен быть числом';
-        } elseif ($stock < 0) {
-            $errors['stock'] = 'Остаток не может быть меньше нуля';
+    foreach ($catalog as $product) {
+        if ((int)$product['id'] === $id) {
+            return $product;
         }
     }
-
-    if (isset($data['discount'])) {
-        $discount = trim($data['discount']);
-        if (!is_numeric($discount)) {
-            $errors['discount'] = 'Скидка должна быть числом';
-        } elseif ($discount < 0 || $discount > 100) {
-            $errors['discount'] = 'Скидка от 0 до 100';
-        }
-    }
-
-    return $errors;
+    return null;
 }
 
-function sanitize_product($data)
+function next_id($catalog)
+{
+    $maxId = 0;
+
+    foreach ($catalog as $product) {
+        if ($product['id'] > $maxId) {
+            $maxId = $product['id'];
+        }
+    }
+
+    return $maxId + 1;
+}
+
+function make_product($data)
 {
     $price = str_replace(',', '.', trim($data['price']));
 
@@ -93,4 +115,194 @@ function sanitize_product($data)
         'stock' => (int)$data['stock'],
         'discount' => (int)$data['discount'],
     ];
+}
+
+function add_product($catalog, $data)
+{
+    $newProduct = ['id' => next_id($catalog)] + make_product($data);
+    $catalog[] = $newProduct;
+    return $catalog;
+}
+
+function update_product($catalog, $id, $data)
+{
+    $catalogLength = count($catalog);
+
+    for ($i = 0; $i < $catalogLength; $i++) {
+        if ((int)$catalog[$i]['id'] === $id) {
+            $catalog[$i] = ['id' => $catalog[$i]['id']] + make_product($data);
+        }
+    }
+
+    return $catalog;
+}
+
+function delete_product($catalog, $id)
+{
+    $ret = [];
+
+    foreach ($catalog as $product) {
+        if ((int)$product['id'] !== $id) {
+            $ret[] = $product;
+        }
+    }
+
+    return $ret;
+}
+
+function unique_categories($catalog)
+{
+    $ret = [];
+
+    foreach ($catalog as $product) {
+        if (!in_array($product['category'], $ret)) {
+            $ret[] = $product['category'];
+        }
+    }
+
+    return $ret;
+}
+
+function search_by_name($catalog, $query)
+{
+    $search = mb_strtolower(trim($query));
+    $ret = [];
+
+    foreach ($catalog as $product) {
+        if ($search === '' || str_contains(mb_strtolower($product['title']), $search)) {
+            $ret[] = $product;
+        }
+    }
+
+    return $ret;
+}
+
+function filter_by_category($catalog, $category)
+{
+    $ret = [];
+
+    foreach ($catalog as $product) {
+        if ($category === '' || $category === 'all' || $product['category'] === $category) {
+            $ret[] = $product;
+        }
+    }
+
+    return $ret;
+}
+
+function sort_by_price($catalog, $direction = 'asc')
+{
+    $ret = $catalog;
+    if ($direction == 'asc') {
+        usort($ret, function ($a, $b) {
+            return $a['price'] <=> $b['price'];
+        });
+    } else {
+        usort($ret, function ($a, $b) {
+            return $b['price'] <=> $a['price'];
+        });
+    }
+    return $ret;
+}
+
+function sort_by_title($catalog, $direction = 'asc')
+{
+    $ret = $catalog;
+    if ($direction == 'asc') {
+        usort($ret, function ($a, $b) {
+            return mb_strtolower($a['title']) <=> mb_strtolower($b['title']);
+        });
+    } else {
+        usort($ret, function ($a, $b) {
+            return mb_strtolower($b['title']) <=> mb_strtolower($a['title']);
+        });
+    }
+    return $ret;
+}
+
+function sort_by_stock($catalog, $direction = 'asc')
+{
+    $ret = $catalog;
+    if ($direction == 'asc') {
+        usort($ret, function ($a, $b) {
+            return $a['stock'] <=> $b['stock'];
+        });
+    } else {
+        usort($ret, function ($a, $b) {
+            return $b['stock'] <=> $a['stock'];
+        });
+    }
+    return $ret;
+}
+
+function paginate($items, $page, $perPage)
+{
+    $totalPages = (int)ceil(count($items) / $perPage);
+    if ($totalPages < 1) {
+        $totalPages = 1;
+    }
+    if ($page < 1) {
+        $page = 1;
+    }
+    if ($page > $totalPages) {
+        $page = $totalPages;
+    }
+
+    return [
+        'items' => array_slice($items, $perPage * ($page - 1), $perPage),
+        'total' => count($items),
+        'page' => $page,
+        'totalPages' => $totalPages,
+    ];
+}
+
+function validate_product($data)
+{
+    $errors = [];
+
+    $title = isset($data['title']) ? trim($data['title']) : '';
+    if ($title === '') {
+        $errors['title'] = 'Введите название';
+    } elseif (mb_strlen($title) < 3) {
+        $errors['title'] = 'Название не короче 3 символов';
+    }
+
+    $category = isset($data['category']) ? trim($data['category']) : '';
+    if ($category === '') {
+        $errors['category'] = 'Выберите категорию';
+    }
+
+    $priceText = isset($data['price']) ? str_replace(',', '.', trim($data['price'])) : '';
+    if (!is_numeric($priceText)) {
+        $errors['price'] = 'Цена должна быть числом';
+    } elseif ($priceText <= 0) {
+        $errors['price'] = 'Цена должна быть больше нуля';
+    }
+
+    if (isset($data['stock'])) {
+        $stockText = trim($data['stock']);
+        if (!is_numeric($stockText)) {
+            $errors['stock'] = 'Остаток должен быть числом';
+        } elseif ($stockText < 0) {
+            $errors['stock'] = 'Остаток не может быть меньше нуля';
+        }
+    }
+
+    if (isset($data['discount'])) {
+        $discountText = trim($data['discount']);
+        if (!is_numeric($discountText)) {
+            $errors['discount'] = 'Скидка должна быть числом';
+        } elseif ($discountText < 0 || $discountText > 100) {
+            $errors['discount'] = 'Скидка от 0 до 100';
+        }
+    }
+
+    return $errors;
+}
+
+function query_url($params)
+{
+    $all = array_merge($_GET, $params);
+    unset($all['added'], $all['updated'], $all['deleted']);
+    return 'index.php?' . http_build_query($all);
 }

@@ -1,75 +1,125 @@
 <?php
-define('CATALOG_FILE', __DIR__ . '/catalog.json');
+require __DIR__ . '/functions.php';
+require __DIR__ . '/layout.php';
 
-function default_catalog(): array
-{
-    return [
-            ['id' => 1, 'title' => 'Grand Theft Auto VI', 'category' => 'Game', 'price' => 9000, 'stock' => 15, 'discount' => 0],
-            ['id' => 2, 'title' => 'Grand Theft Auto VI Full Edition', 'category' => 'Game', 'price' => 15000, 'stock' => 25, 'discount' => 5],
-            ['id' => 3, 'title' => 'The Witcher IV', 'category' => 'Game', 'price' => 6500, 'stock' => 50, 'discount' => 15],
-            ['id' => 4, 'title' => 'Grdariki', 'category' => 'Game', 'price' => 5800, 'stock' => 36, 'discount' => 25],
-            ['id' => 5, 'title' => 'Steam Deck', 'category' => 'Console', 'price' => 58000, 'stock' => 12, 'discount' => 0],
-            ['id' => 6, 'title' => 'PlayStation', 'category' => 'Console', 'price' => 65000, 'stock' => 8, 'discount' => 3],
-            ['id' => 7, 'title' => 'Apple', 'category' => 'Parte', 'price' => 9999999999, 'stock' => 1, 'discount' => 0],
-            ['id' => 8, 'title' => 'Rofl', 'category' => 'PHPHPHPHPHPHP', 'price' => 999999, 'stock' => 1, 'discount' => 0]
-    ];
+$catalog = load_catalog();
+$categories = unique_categories($catalog);
+
+$search = isset($_GET['search']) ? $_GET['search'] : '';
+$category = isset($_GET['category']) ? $_GET['category'] : 'all';
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'price_asc';
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+
+if (!in_array($sort, ['price_asc', 'price_desc', 'title', 'stock'])) {
+    $sort = 'price_asc';
 }
 
-function save_catalog(array $catalog, string $file = CATALOG_FILE): bool
-{
-    $json = json_encode($catalog, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-    $result = @file_put_contents($file, $json, LOCK_EX);
-    if ($result === false) {
-        return false;
-    }
-    return true;
+$products = search_by_name($catalog, $search);
+$products = filter_by_category($products, $category);
+
+if ($sort == 'price_desc') {
+    $products = sort_by_price($products, 'desc');
+} elseif ($sort == 'title') {
+    $products = sort_by_title($products);
+} elseif ($sort == 'stock') {
+    $products = sort_by_stock($products, 'desc');
+} else {
+    $products = sort_by_price($products, 'asc');
 }
 
-function load_catalog(string $file = CATALOG_FILE): array
-{
-    if (is_file($file) && is_readable($file)) {
-        $json = file_get_contents($file);
-        if ($json !== false && json_validate($json)) {
-            $catalog = json_decode($json, true);
-            if (is_array($catalog) && array_is_list($catalog)) {
-                return $catalog;
-            }
-        }
-        rename($file, $file . '.broken.' . date('YmdHis'));
-    }
+$pageData = paginate($products, $page, PER_PAGE);
+$stats = catalog_stats($catalog);
 
-    $catalog = default_catalog();
-    save_catalog($catalog, $file);
-    return $catalog;
+page_header('Каталог товаров');
+
+if (isset($_GET['added'])) {
+    banner('ok', 'Товар #' . (int)$_GET['added'] . ' добавлен');
 }
-
-function catalog_stats(array $catalog): array
-{
-    $catalogLength = count($catalog);
-    $totalStock = 0;
-    $totalStockValue = 0;
-
-    foreach ($catalog as $product) {
-        $totalStock += $product['stock'];
-        $totalStockValue += $product['price'] * $product['stock'];
-    }
-
-    return [
-            'products' => $catalogLength,
-            'stock' => $totalStock,
-            'value' => $totalStockValue,
-    ];
+if (isset($_GET['updated'])) {
+    banner('ok', 'Товар #' . (int)$_GET['updated'] . ' обновлён');
 }
-
-function next_id(array $catalog): int
-{
-    $maxId = 0;
-
-    foreach ($catalog as $product) {
-        if ($product['id'] > $maxId) {
-            $maxId = $product['id'];
-        }
-    }
-
-    return $maxId + 1;
+if (isset($_GET['deleted'])) {
+    banner('ok', 'Товар #' . (int)$_GET['deleted'] . ' удалён');
 }
+?>
+
+    <p>
+        Товаров: <?= e($stats['products']) ?>,
+        остаток: <?= e($stats['stock']) ?>,
+        стоимость склада: <?= e(number_format($stats['value'], 2, ',', ' ')) ?> руб.
+    </p>
+
+    <form method="get">
+        <p>
+            <label for="search">Поиск:</label>
+            <input type="text" id="search" name="search" value="<?= e($search) ?>">
+        </p>
+        <p>
+            <label for="cat">Категория:</label>
+            <select id="cat" name="category">
+                <option value="all">Все</option>
+                <?php foreach ($categories as $cat): ?>
+                    <option value="<?= e($cat) ?>" <?= $category === $cat ? 'selected' : '' ?>>
+                        <?= e($cat) ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+        </p>
+        <p>
+            <label for="sort">Сортировка:</label>
+            <select id="sort" name="sort">
+                <option value="price_asc" <?= $sort == 'price_asc' ? 'selected' : '' ?>>Цена ↑</option>
+                <option value="price_desc" <?= $sort == 'price_desc' ? 'selected' : '' ?>>Цена ↓</option>
+                <option value="title" <?= $sort == 'title' ? 'selected' : '' ?>>По алфавиту</option>
+                <option value="stock" <?= $sort == 'stock' ? 'selected' : '' ?>>По остатку</option>
+            </select>
+        </p>
+        <button type="submit">Применить</button>
+    </form>
+
+    <hr>
+
+    <table border="1" cellpadding="5">
+        <tr>
+            <th>ID</th>
+            <th>Название</th>
+            <th>Категория</th>
+            <th>Цена</th>
+            <th>Скидка</th>
+            <th>Цена со скидкой</th>
+            <th>Наличие</th>
+            <th></th>
+        </tr>
+        <?php if (count($pageData['items']) == 0): ?>
+            <tr><td colspan="8">Ничего не найдено</td></tr>
+        <?php else: ?>
+            <?php foreach ($pageData['items'] as $p): ?>
+                <tr>
+                    <td><?= e($p['id']) ?></td>
+                    <td><?= e($p['title']) ?></td>
+                    <td><?= e($p['category']) ?></td>
+                    <td><?= e($p['price']) ?></td>
+                    <td><?= e($p['discount']) ?>%</td>
+                    <td><?= e(number_format(price_with_discount($p['price'], $p['discount']), 2, ',', ' ')) ?></td>
+                    <td><?= e(stock_label($p['stock'])) ?> (<?= e($p['stock']) ?>)</td>
+                    <td>
+                        <a href="edit.php?id=<?= e($p['id']) ?>">Изменить</a>
+                        <a href="delete.php?id=<?= e($p['id']) ?>">Удалить</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </table>
+
+    <p>
+        Страницы:
+        <?php for ($i = 1; $i <= $pageData['totalPages']; $i++): ?>
+            <?php if ($i == $pageData['page']): ?>
+                <b><?= $i ?></b>
+            <?php else: ?>
+                <a href="<?= e(query_url(['page' => $i])) ?>"><?= $i ?></a>
+            <?php endif; ?>
+        <?php endfor; ?>
+    </p>
+<?php
+page_footer();

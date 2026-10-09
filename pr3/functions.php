@@ -51,7 +51,7 @@ function validate_product($data)
     }
     elseif ((int)$stock < 0)
     {
-        $errors['stock'] = 'Остаток не может быть меньше нуля.';
+        $errors['stock'] = 'Existence dont < 0';
     }
 
     $price = isset($data['price']) ? ($data['price']) : '';

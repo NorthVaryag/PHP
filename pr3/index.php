@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST')
                 <td><?= e($p['price']) ?></td>
                 <td><?= e($p['discount']) ?>%</td>
                 <td><?= e(price_without_discount($p['price'], $p['discount'])) ?></td>
-                <td><?= $p['stock'] > 0 ? 'В наличии' : 'Нет в наличии' ?></td>
+                <td><?= $p['stock'] > 0 ? 'In stock' : 'Out of stock' ?></td>
             </tr>
         <?php endforeach; ?>
     <?php endif; ?>

@@ -1,5 +1,5 @@
 <?php
-define('CATALOG_FILE', __DIR__ . '/data/catalog.json');
+define('CATALOG_FILE', __DIR__ . '/Catalog.php');
 define('PER_PAGE', 5);
 
 function e($value)
@@ -24,14 +24,14 @@ function stock_label($stock)
 function default_catalog(): array
 {
     return [
-        ['id' => 1, 'title' => 'Ноутбук Lenovo IdeaPad', 'category' => 'Техника', 'price' => 54990, 'stock' => 15, 'discount' => 10],
-        ['id' => 2, 'title' => 'Смартфон Xiaomi', 'category' => 'Техника', 'price' => 21990, 'stock' => 30, 'discount' => 5],
-        ['id' => 3, 'title' => 'Наушники JBL Tune', 'category' => 'Аксессуары', 'price' => 4990, 'stock' => 40, 'discount' => 0],
-        ['id' => 4, 'title' => 'Игровая приставка PS5', 'category' => 'Игры', 'price' => 65000, 'stock' => 20, 'discount' => 3],
-        ['id' => 5, 'title' => 'Настольная игра Монополия', 'category' => 'Игры', 'price' => 2490, 'stock' => 35, 'discount' => 15],
-        ['id' => 6, 'title' => 'Мышь беспроводная', 'category' => 'Аксессуары', 'price' => 2500, 'stock' => 45, 'discount' => 20],
-        ['id' => 7, 'title' => 'Механическая клавиатура', 'category' => 'Аксессуары', 'price' => 7500, 'stock' => 25, 'discount' => 0],
-        ['id' => 8, 'title' => 'Зарядное устройство USB', 'category' => 'Аксессуары', 'price' => 1200, 'stock' => 16, 'discount' => 0],
+        ['id' => 1, 'title' => 'Grand Theft Auto VI', 'category' => 'Game', 'price' => 9000, 'stock' => 15, 'discount' => 0],
+        ['id' => 2, 'title' => 'Grand Theft Auto VI Full Edition', 'category' => 'Game', 'price' => 15000, 'stock' => 25, 'discount' => 5],
+        ['id' => 3, 'title' => 'The Witcher IV', 'category' => 'Game', 'price' => 6500, 'stock' => 50, 'discount' => 15],
+        ['id' => 4, 'title' => 'Grdariki', 'category' => 'Game', 'price' => 5800, 'stock' => 36, 'discount' => 25],
+        ['id' => 5, 'title' => 'Steam Deck', 'category' => 'Console', 'price' => 58000, 'stock' => 12, 'discount' => 0],
+        ['id' => 6, 'title' => 'PlayStation', 'category' => 'Console', 'price' => 65000, 'stock' => 8, 'discount' => 3],
+        ['id' => 7, 'title' => 'Apple', 'category' => 'Parte', 'price' => 9999999999, 'stock' => 1, 'discount' => 0],
+        ['id' => 8, 'title' => 'Rofl', 'category' => 'PHPHPHPHPHPHP', 'price' => 999999, 'stock' => 1, 'discount' => 0],
     ];
 }
 
